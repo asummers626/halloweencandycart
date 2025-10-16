@@ -1,0 +1,129 @@
+import { getDB } from './firebase';
+import { ref, set, onValue, off, get } from 'firebase/database';
+import type { CandyStatus, CartLocation } from '@/store/candyCartStore';
+
+export interface CartData {
+  cartLocation: CartLocation | null;
+  candyStatus: CandyStatus;
+  festiveMessage: string;
+  cartImage: string | null;
+  lastUpdated: number;
+}
+
+const CART_DATA_PATH = 'candyCart';
+
+// Update cart location in Firebase
+export const updateCartLocation = async (location: CartLocation): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const cartRef = ref(db, `${CART_DATA_PATH}/cartLocation`);
+  await set(cartRef, location);
+
+  // Update timestamp
+  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
+  await set(timestampRef, Date.now());
+};
+
+// Update candy status in Firebase
+export const updateCandyStatus = async (status: CandyStatus): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const statusRef = ref(db, `${CART_DATA_PATH}/candyStatus`);
+  await set(statusRef, status);
+
+  // Update timestamp
+  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
+  await set(timestampRef, Date.now());
+};
+
+// Update festive message in Firebase
+export const updateFestiveMessage = async (message: string): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const messageRef = ref(db, `${CART_DATA_PATH}/festiveMessage`);
+  await set(messageRef, message);
+
+  // Update timestamp
+  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
+  await set(timestampRef, Date.now());
+};
+
+// Update cart image in Firebase
+export const updateCartImage = async (image: string | null): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const imageRef = ref(db, `${CART_DATA_PATH}/cartImage`);
+  await set(imageRef, image);
+
+  // Update timestamp
+  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
+  await set(timestampRef, Date.now());
+};
+
+// Get current cart data (one-time read)
+export const getCartData = async (): Promise<CartData | null> => {
+  const db = getDB();
+  if (!db) return null;
+
+  const cartRef = ref(db, CART_DATA_PATH);
+  const snapshot = await get(cartRef);
+
+  if (snapshot.exists()) {
+    return snapshot.val() as CartData;
+  }
+  return null;
+};
+
+// Subscribe to cart data changes (real-time)
+export const subscribeToCartData = (callback: (data: CartData) => void): (() => void) => {
+  const db = getDB();
+  if (!db) return () => {};
+
+  const cartRef = ref(db, CART_DATA_PATH);
+
+  onValue(cartRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.val() as CartData;
+      callback(data);
+    } else {
+      // Initialize with default values if no data exists
+      const defaultData: CartData = {
+        cartLocation: null,
+        candyStatus: 'good',
+        festiveMessage: '🎃 Candy Here! 👻',
+        cartImage: null,
+        lastUpdated: Date.now(),
+      };
+      callback(defaultData);
+    }
+  });
+
+  // Return unsubscribe function
+  return () => {
+    off(cartRef);
+  };
+};
+
+// Initialize cart data (call this once when setting up)
+export const initializeCartData = async (): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const cartRef = ref(db, CART_DATA_PATH);
+  const snapshot = await get(cartRef);
+
+  if (!snapshot.exists()) {
+    const defaultData: CartData = {
+      cartLocation: null,
+      candyStatus: 'good',
+      festiveMessage: '🎃 Candy Here! 👻',
+      cartImage: null,
+      lastUpdated: Date.now(),
+    };
+    await set(cartRef, defaultData);
+  }
+};

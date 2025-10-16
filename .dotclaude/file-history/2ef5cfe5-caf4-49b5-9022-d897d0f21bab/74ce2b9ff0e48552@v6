@@ -1,0 +1,142 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+export type CandyStatus = 'good' | 'low' | 'out';
+
+export interface CartLocation {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+}
+
+interface CandyCartState {
+  // Cart location
+  cartLocation: CartLocation | null;
+  setCartLocation: (location: CartLocation, syncToFirebase?: boolean) => void;
+
+  // Candy status
+  candyStatus: CandyStatus;
+  setCandyStatus: (status: CandyStatus, syncToFirebase?: boolean) => void;
+
+  // Festive message
+  festiveMessage: string;
+  setFestiveMessage: (message: string, syncToFirebase?: boolean) => void;
+
+  // Cart image (base64 or URL)
+  cartImage: string | null;
+  setCartImage: (image: string | null, syncToFirebase?: boolean) => void;
+
+  // Admin authentication (local only, not synced)
+  isAdminLoggedIn: boolean;
+  setAdminLoggedIn: (loggedIn: boolean) => void;
+
+  // Auto-refresh settings (local only, not synced)
+  autoRefreshEnabled: boolean;
+  refreshInterval: number; // in seconds
+  setAutoRefreshEnabled: (enabled: boolean) => void;
+  setRefreshInterval: (interval: number) => void;
+
+  // Firebase sync methods
+  syncFromFirebase: (data: { cartLocation?: CartLocation | null; candyStatus?: CandyStatus; festiveMessage?: string; cartImage?: string | null }) => void;
+}
+
+export const useCandyCartStore = create<CandyCartState>()(
+  persist(
+    (set) => ({
+      // Initial state
+      cartLocation: null,
+      candyStatus: 'good',
+      festiveMessage: '🎃 Candy Here! 👻',
+      cartImage: null,
+      isAdminLoggedIn: false,
+      autoRefreshEnabled: false,
+      refreshInterval: 30,
+
+      // Actions with Firebase sync
+      setCartLocation: async (location, syncToFirebase = true) => {
+        set({ cartLocation: location });
+        if (syncToFirebase && typeof window !== 'undefined') {
+          try {
+            const { updateCartLocation } = await import('@/lib/firebaseService');
+            await updateCartLocation(location);
+          } catch (error) {
+            console.error('Error syncing cart location to Firebase:', error);
+          }
+        }
+      },
+
+      setCandyStatus: async (status, syncToFirebase = true) => {
+        set({ candyStatus: status });
+        if (syncToFirebase && typeof window !== 'undefined') {
+          try {
+            const { updateCandyStatus } = await import('@/lib/firebaseService');
+            await updateCandyStatus(status);
+          } catch (error) {
+            console.error('Error syncing candy status to Firebase:', error);
+          }
+        }
+      },
+
+      setFestiveMessage: async (message, syncToFirebase = true) => {
+        set({ festiveMessage: message });
+        if (syncToFirebase && typeof window !== 'undefined') {
+          try {
+            const { updateFestiveMessage } = await import('@/lib/firebaseService');
+            await updateFestiveMessage(message);
+          } catch (error) {
+            console.error('Error syncing festive message to Firebase:', error);
+          }
+        }
+      },
+
+      setCartImage: async (image, syncToFirebase = true) => {
+        set({ cartImage: image });
+        if (syncToFirebase && typeof window !== 'undefined') {
+          try {
+            const { updateCartImage } = await import('@/lib/firebaseService');
+            await updateCartImage(image);
+          } catch (error) {
+            console.error('Error syncing cart image to Firebase:', error);
+          }
+        }
+      },
+
+      // Local-only actions (not synced to Firebase)
+      setAdminLoggedIn: (loggedIn) => set({ isAdminLoggedIn: loggedIn }),
+      setAutoRefreshEnabled: (enabled) => set({ autoRefreshEnabled: enabled }),
+      setRefreshInterval: (interval) => set({ refreshInterval: interval }),
+
+      // Sync from Firebase (called by Firebase listener)
+      syncFromFirebase: (data) => {
+        set((state) => ({
+          ...state,
+          ...(data.cartLocation !== undefined && { cartLocation: data.cartLocation }),
+          ...(data.candyStatus !== undefined && { candyStatus: data.candyStatus }),
+          ...(data.festiveMessage !== undefined && { festiveMessage: data.festiveMessage }),
+          ...(data.cartImage !== undefined && { cartImage: data.cartImage }),
+        }));
+      },
+    }),
+    {
+      name: 'candy-cart-storage',
+      // Only persist admin and auto-refresh settings locally
+      partialize: (state) => ({
+        isAdminLoggedIn: state.isAdminLoggedIn,
+        autoRefreshEnabled: state.autoRefreshEnabled,
+        refreshInterval: state.refreshInterval,
+      }),
+      storage: createJSONStorage(() => {
+        // Only use localStorage on the client
+        if (typeof window !== 'undefined') {
+          return localStorage;
+        }
+        // Return a dummy storage for SSR
+        return {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        };
+      }),
+    }
+  )
+);
