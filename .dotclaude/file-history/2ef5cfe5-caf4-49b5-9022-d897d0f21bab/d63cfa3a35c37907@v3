@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -56,27 +56,16 @@ export default function CandyMap({ cartLocation, userLocation, center, zoom = 15
   const [mapCenter, setMapCenter] = useState<[number, number]>(
     center || [33.7490, -84.3880] // Default to Atlanta
   );
-  const hasInitialized = useRef(false);
 
-  // Update map center when explicitly requested via center prop
   useEffect(() => {
     if (center) {
       setMapCenter(center);
+    } else if (userLocation) {
+      setMapCenter([userLocation.latitude, userLocation.longitude]);
+    } else if (cartLocation) {
+      setMapCenter([cartLocation.latitude, cartLocation.longitude]);
     }
-  }, [center, updateKey]);
-
-  // Set initial map center only once when locations first become available
-  useEffect(() => {
-    if (!hasInitialized.current && !center) {
-      if (userLocation) {
-        setMapCenter([userLocation.latitude, userLocation.longitude]);
-        hasInitialized.current = true;
-      } else if (cartLocation) {
-        setMapCenter([cartLocation.latitude, cartLocation.longitude]);
-        hasInitialized.current = true;
-      }
-    }
-  }, [userLocation, cartLocation, center]);
+  }, [center, userLocation, cartLocation, updateKey]);
 
   return (
     <MapContainer
