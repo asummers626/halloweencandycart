@@ -30,7 +30,6 @@ export default function HomePage() {
   const [mapZoom, setMapZoom] = useState(15);
   const [locationError, setLocationError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mapUpdateKey, setMapUpdateKey] = useState(0);
 
   // Handle hydration
   useEffect(() => {
@@ -71,7 +70,6 @@ export default function HomePage() {
     if (userLocation) {
       setMapCenter([userLocation.latitude, userLocation.longitude]);
       setMapZoom(16);
-      setMapUpdateKey(prev => prev + 1);
     }
   };
 
@@ -79,7 +77,6 @@ export default function HomePage() {
     if (cartLocation) {
       setMapCenter([cartLocation.latitude, cartLocation.longitude]);
       setMapZoom(16);
-      setMapUpdateKey(prev => prev + 1);
     }
   };
 
@@ -149,7 +146,6 @@ export default function HomePage() {
           userLocation={userLocation}
           center={mapCenter}
           zoom={mapZoom}
-          updateKey={mapUpdateKey}
         />
 
         {/* Hamburger Menu Button */}

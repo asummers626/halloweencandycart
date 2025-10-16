@@ -49,9 +49,10 @@ interface CandyMapProps {
   userLocation: { latitude: number; longitude: number } | null;
   center?: [number, number];
   zoom?: number;
+  updateKey?: number;
 }
 
-export default function CandyMap({ cartLocation, userLocation, center, zoom = 15 }: CandyMapProps) {
+export default function CandyMap({ cartLocation, userLocation, center, zoom = 15, updateKey }: CandyMapProps) {
   const [mapCenter, setMapCenter] = useState<[number, number]>(
     center || [33.7490, -84.3880] // Default to Atlanta
   );
@@ -64,7 +65,7 @@ export default function CandyMap({ cartLocation, userLocation, center, zoom = 15
     } else if (cartLocation) {
       setMapCenter([cartLocation.latitude, cartLocation.longitude]);
     }
-  }, [center, userLocation, cartLocation]);
+  }, [center, userLocation, cartLocation, updateKey]);
 
   return (
     <MapContainer
