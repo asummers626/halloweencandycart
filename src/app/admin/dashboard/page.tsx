@@ -22,6 +22,8 @@ export default function AdminDashboardPage() {
     setCandyStatus,
     festiveMessage,
     setFestiveMessage,
+    cartImage,
+    setCartImage,
     autoRefreshEnabled,
     setAutoRefreshEnabled,
     refreshInterval,
@@ -32,6 +34,7 @@ export default function AdminDashboardPage() {
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [locationError, setLocationError] = useState('');
   const [editingMessage, setEditingMessage] = useState(festiveMessage);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -112,6 +115,35 @@ export default function AdminDashboardPage() {
       setRefreshInterval(interval);
       setCustomInterval('');
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 1MB to avoid Firebase limitations)
+    if (file.size > 1024 * 1024) {
+      alert('Image size should be less than 1MB');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setCartImage(base64String);
+      setUploadingImage(false);
+    };
+    reader.onerror = () => {
+      alert('Error reading image file');
+      setUploadingImage(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setCartImage(null);
   };
 
   if (!isAdminLoggedIn) {
@@ -349,6 +381,49 @@ export default function AdminDashboardPage() {
             >
               Update Message
             </button>
+          </div>
+        </div>
+
+        {/* Cart Image Upload */}
+        <div className="bg-black/50 backdrop-blur-lg border-4 border-blue-500 rounded-3xl p-6 mb-6">
+          <h2 className="text-2xl font-bold text-blue-300 mb-4">📸 Who to Look For</h2>
+
+          <div className="space-y-3">
+            {cartImage && (
+              <div className="bg-blue-900/30 rounded-xl p-4">
+                <div className="text-sm text-blue-200 mb-2">Current Image:</div>
+                <img
+                  src={cartImage}
+                  alt="Cart operator"
+                  className="w-full max-w-md mx-auto rounded-lg shadow-lg"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg text-center cursor-pointer">
+                  {uploadingImage ? 'Uploading...' : cartImage ? '📷 Change Image' : '📷 Upload Image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="hidden"
+                  />
+                </div>
+              </label>
+              <p className="text-xs text-blue-300 text-center">Maximum file size: 1MB</p>
+            </div>
+
+            {cartImage && (
+              <button
+                onClick={handleRemoveImage}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+              >
+                🗑️ Remove Image
+              </button>
+            )}
           </div>
         </div>
 

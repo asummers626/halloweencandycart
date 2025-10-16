@@ -18,7 +18,7 @@ const CandyMap = dynamic(() => import('@/components/CandyMap'), {
 
 export default function HomePage() {
   const router = useRouter();
-  const { cartLocation, candyStatus, festiveMessage, autoRefreshEnabled, refreshInterval, isAdminLoggedIn } =
+  const { cartLocation, candyStatus, festiveMessage, cartImage, autoRefreshEnabled, refreshInterval, isAdminLoggedIn } =
     useCandyCartStore();
 
   // Enable Firebase real-time sync
@@ -31,6 +31,7 @@ export default function HomePage() {
   const [locationError, setLocationError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [mapUpdateKey, setMapUpdateKey] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   // Handle hydration
   useEffect(() => {
@@ -196,6 +197,19 @@ export default function HomePage() {
               🍬 Find Cart
             </button>
 
+            {/* Who to Look For Button */}
+            {cartImage && (
+              <button
+                onClick={() => {
+                  setShowImageModal(true);
+                  setMenuOpen(false);
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
+              >
+                👤 Who to Look For
+              </button>
+            )}
+
             {/* Directions Section */}
             {cartLocation && (
               <div className="pt-2 border-t-2 border-purple-700">
@@ -293,6 +307,35 @@ export default function HomePage() {
       <div className="fixed top-20 right-4 text-3xl animate-bounce delay-100 pointer-events-none z-[500]">
         🦇
       </div>
+
+      {/* Image Modal */}
+      {showImageModal && cartImage && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div
+            className="bg-gradient-to-br from-purple-900 to-black border-4 border-orange-500 rounded-3xl p-6 max-w-2xl w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-orange-500">👤 Who to Look For</h2>
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="text-white hover:text-orange-500 text-3xl font-bold transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <img
+              src={cartImage}
+              alt="Cart operator"
+              className="w-full rounded-xl shadow-lg"
+            />
+            <p className="text-purple-300 text-center mt-4">Look for this person at the candy cart! 🍬</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

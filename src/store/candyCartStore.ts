@@ -22,6 +22,10 @@ interface CandyCartState {
   festiveMessage: string;
   setFestiveMessage: (message: string, syncToFirebase?: boolean) => void;
 
+  // Cart image (base64 or URL)
+  cartImage: string | null;
+  setCartImage: (image: string | null, syncToFirebase?: boolean) => void;
+
   // Admin authentication (local only, not synced)
   isAdminLoggedIn: boolean;
   setAdminLoggedIn: (loggedIn: boolean) => void;
@@ -33,7 +37,7 @@ interface CandyCartState {
   setRefreshInterval: (interval: number) => void;
 
   // Firebase sync methods
-  syncFromFirebase: (data: { cartLocation?: CartLocation | null; candyStatus?: CandyStatus; festiveMessage?: string }) => void;
+  syncFromFirebase: (data: { cartLocation?: CartLocation | null; candyStatus?: CandyStatus; festiveMessage?: string; cartImage?: string | null }) => void;
 }
 
 export const useCandyCartStore = create<CandyCartState>()(
@@ -43,6 +47,7 @@ export const useCandyCartStore = create<CandyCartState>()(
       cartLocation: null,
       candyStatus: 'good',
       festiveMessage: '🎃 Candy Here! 👻',
+      cartImage: null,
       isAdminLoggedIn: false,
       autoRefreshEnabled: false,
       refreshInterval: 30,
@@ -84,6 +89,18 @@ export const useCandyCartStore = create<CandyCartState>()(
         }
       },
 
+      setCartImage: async (image, syncToFirebase = true) => {
+        set({ cartImage: image });
+        if (syncToFirebase && typeof window !== 'undefined') {
+          try {
+            const { updateCartImage } = await import('@/lib/firebaseService');
+            await updateCartImage(image);
+          } catch (error) {
+            console.error('Error syncing cart image to Firebase:', error);
+          }
+        }
+      },
+
       // Local-only actions (not synced to Firebase)
       setAdminLoggedIn: (loggedIn) => set({ isAdminLoggedIn: loggedIn }),
       setAutoRefreshEnabled: (enabled) => set({ autoRefreshEnabled: enabled }),
@@ -96,6 +113,7 @@ export const useCandyCartStore = create<CandyCartState>()(
           ...(data.cartLocation !== undefined && { cartLocation: data.cartLocation }),
           ...(data.candyStatus !== undefined && { candyStatus: data.candyStatus }),
           ...(data.festiveMessage !== undefined && { festiveMessage: data.festiveMessage }),
+          ...(data.cartImage !== undefined && { cartImage: data.cartImage }),
         }));
       },
     }),

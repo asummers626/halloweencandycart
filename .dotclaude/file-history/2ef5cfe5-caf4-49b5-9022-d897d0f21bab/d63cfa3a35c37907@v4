@@ -62,13 +62,12 @@ export default function CandyMap({ cartLocation, userLocation, center, zoom = 15
   useEffect(() => {
     if (center) {
       setMapCenter(center);
-      hasInitialized.current = true; // Mark as initialized when explicitly centered
     }
   }, [center, updateKey]);
 
   // Set initial map center only once when locations first become available
   useEffect(() => {
-    if (!hasInitialized.current) {
+    if (!hasInitialized.current && !center) {
       if (userLocation) {
         setMapCenter([userLocation.latitude, userLocation.longitude]);
         hasInitialized.current = true;
@@ -77,7 +76,7 @@ export default function CandyMap({ cartLocation, userLocation, center, zoom = 15
         hasInitialized.current = true;
       }
     }
-  }, [userLocation, cartLocation]);
+  }, [userLocation, cartLocation, center]);
 
   return (
     <MapContainer

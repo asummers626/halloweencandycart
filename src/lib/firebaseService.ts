@@ -6,6 +6,7 @@ export interface CartData {
   cartLocation: CartLocation | null;
   candyStatus: CandyStatus;
   festiveMessage: string;
+  cartImage: string | null;
   lastUpdated: number;
 }
 
@@ -50,6 +51,19 @@ export const updateFestiveMessage = async (message: string): Promise<void> => {
   await set(timestampRef, Date.now());
 };
 
+// Update cart image in Firebase
+export const updateCartImage = async (image: string | null): Promise<void> => {
+  const db = getDB();
+  if (!db) return;
+
+  const imageRef = ref(db, `${CART_DATA_PATH}/cartImage`);
+  await set(imageRef, image);
+
+  // Update timestamp
+  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
+  await set(timestampRef, Date.now());
+};
+
 // Get current cart data (one-time read)
 export const getCartData = async (): Promise<CartData | null> => {
   const db = getDB();
@@ -81,6 +95,7 @@ export const subscribeToCartData = (callback: (data: CartData) => void): (() => 
         cartLocation: null,
         candyStatus: 'good',
         festiveMessage: '🎃 Candy Here! 👻',
+        cartImage: null,
         lastUpdated: Date.now(),
       };
       callback(defaultData);
@@ -106,6 +121,7 @@ export const initializeCartData = async (): Promise<void> => {
       cartLocation: null,
       candyStatus: 'good',
       festiveMessage: '🎃 Candy Here! 👻',
+      cartImage: null,
       lastUpdated: Date.now(),
     };
     await set(cartRef, defaultData);

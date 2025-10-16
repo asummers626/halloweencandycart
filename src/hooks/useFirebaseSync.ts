@@ -29,6 +29,7 @@ export function useFirebaseSync() {
             cartLocation: data.cartLocation,
             candyStatus: data.candyStatus,
             festiveMessage: data.festiveMessage,
+            cartImage: data.cartImage,
           });
         });
       } catch (error) {
