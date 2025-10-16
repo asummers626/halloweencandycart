@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useCandyCartStore } from '@/store/candyCartStore';
-import { useFirebaseSync } from '@/hooks/useFirebaseSync';
 
 // Dynamically import map to avoid SSR issues
 const CandyMap = dynamic(() => import('@/components/CandyMap'), {
@@ -21,19 +20,10 @@ export default function HomePage() {
   const { cartLocation, candyStatus, festiveMessage, autoRefreshEnabled, refreshInterval, isAdminLoggedIn } =
     useCandyCartStore();
 
-  // Enable Firebase real-time sync
-  useFirebaseSync();
-
-  const [mounted, setMounted] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
   const [mapZoom, setMapZoom] = useState(15);
   const [locationError, setLocationError] = useState('');
-
-  // Handle hydration
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Get user location on mount
   useEffect(() => {
@@ -93,22 +83,6 @@ export default function HomePage() {
     }
   };
 
-  // Open directions in Google Maps
-  const openGoogleMaps = () => {
-    if (!cartLocation) return;
-
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${cartLocation.latitude},${cartLocation.longitude}`;
-    window.open(url, '_blank');
-  };
-
-  // Open directions in Apple Maps
-  const openAppleMaps = () => {
-    if (!cartLocation) return;
-
-    const url = `http://maps.apple.com/?daddr=${cartLocation.latitude},${cartLocation.longitude}`;
-    window.open(url, '_blank');
-  };
-
   const getCandyStatusMessage = () => {
     if (candyStatus === 'good') {
       return { text: 'Plenty of candy available!', color: 'text-green-400', emoji: '✓' };
@@ -120,15 +94,6 @@ export default function HomePage() {
   };
 
   const statusInfo = getCandyStatusMessage();
-
-  // Show loading state during hydration
-  if (!mounted) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-orange-900 via-purple-900 to-black">
-        <div className="text-white text-2xl">Loading... 🎃</div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen w-screen flex flex-col bg-black">
@@ -166,43 +131,24 @@ export default function HomePage() {
           <button
             onClick={centerOnUser}
             disabled={!userLocation}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
           >
             📍 My Location
           </button>
           <button
             onClick={centerOnCart}
             disabled={!cartLocation}
-            className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
+            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
           >
             🍬 Find Cart
           </button>
           <button
             onClick={showBothLocations}
             disabled={!userLocation && !cartLocation}
-            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
           >
             🗺️ View All
           </button>
-
-          {/* Directions Buttons */}
-          {cartLocation && (
-            <div className="pt-2 border-t-2 border-gray-700">
-              <div className="text-xs text-white text-center mb-1">Get Directions:</div>
-              <button
-                onClick={openGoogleMaps}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 mb-2 text-sm"
-              >
-                🗺️ Google Maps
-              </button>
-              <button
-                onClick={openAppleMaps}
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
-              >
-                🍎 Apple Maps
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Location Error */}
@@ -243,7 +189,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <span className="text-2xl">👻</span>
               <span className="text-purple-300 text-sm">
-                {userLocation ? 'You are here' : 'Enable location for navigation'}
+                {userLocation ? 'Your location tracked' : 'Enable location for navigation'}
               </span>
             </div>
 
