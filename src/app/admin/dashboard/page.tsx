@@ -119,9 +119,9 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-black p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-black p-4 overflow-y-auto">
       {/* Header */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto pb-8">
         <div className="bg-black/50 backdrop-blur-lg border-4 border-orange-500 rounded-3xl p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
