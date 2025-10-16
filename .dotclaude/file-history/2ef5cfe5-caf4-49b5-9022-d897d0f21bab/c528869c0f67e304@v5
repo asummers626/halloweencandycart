@@ -29,7 +29,6 @@ export default function HomePage() {
   const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
   const [mapZoom, setMapZoom] = useState(15);
   const [locationError, setLocationError] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Handle hydration
   useEffect(() => {
@@ -77,6 +76,20 @@ export default function HomePage() {
     if (cartLocation) {
       setMapCenter([cartLocation.latitude, cartLocation.longitude]);
       setMapZoom(16);
+    }
+  };
+
+  const showBothLocations = () => {
+    if (userLocation && cartLocation) {
+      // Calculate center between user and cart
+      const centerLat = (userLocation.latitude + cartLocation.latitude) / 2;
+      const centerLng = (userLocation.longitude + cartLocation.longitude) / 2;
+      setMapCenter([centerLat, centerLng]);
+      setMapZoom(14);
+    } else if (userLocation) {
+      centerOnUser();
+    } else if (cartLocation) {
+      centerOnCart();
     }
   };
 
@@ -148,76 +161,49 @@ export default function HomePage() {
           zoom={mapZoom}
         />
 
-        {/* Hamburger Menu Button */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="absolute top-4 right-4 z-[1000] bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all transform hover:scale-110"
-          aria-label="Menu"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Navigation Controls */}
+        <div className="absolute top-4 right-4 z-[1000] space-y-2">
+          <button
+            onClick={centerOnUser}
+            disabled={!userLocation}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
           >
-            {menuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
+            📍 My Location
+          </button>
+          <button
+            onClick={centerOnCart}
+            disabled={!cartLocation}
+            className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
+          >
+            🍬 Find Cart
+          </button>
+          <button
+            onClick={showBothLocations}
+            disabled={!userLocation && !cartLocation}
+            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105"
+          >
+            🗺️ View All
+          </button>
 
-        {/* Collapsible Navigation Menu */}
-        {menuOpen && (
-          <div className="absolute top-20 right-4 z-[1000] bg-black/90 backdrop-blur-lg border-2 border-purple-500 rounded-2xl p-4 shadow-2xl space-y-2 min-w-[200px]">
-            <button
-              onClick={() => {
-                centerOnUser();
-                setMenuOpen(false);
-              }}
-              disabled={!userLocation}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
-            >
-              📍 My Location
-            </button>
-            <button
-              onClick={() => {
-                centerOnCart();
-                setMenuOpen(false);
-              }}
-              disabled={!cartLocation}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
-            >
-              🍬 Find Cart
-            </button>
-
-            {/* Directions Section */}
-            {cartLocation && (
-              <div className="pt-2 border-t-2 border-purple-700">
-                <div className="text-xs text-purple-300 text-center mb-2 font-semibold">Get Directions:</div>
-                <button
-                  onClick={() => {
-                    openGoogleMaps();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 mb-2 text-sm"
-                >
-                  🗺️ Google Maps
-                </button>
-                <button
-                  onClick={() => {
-                    openAppleMaps();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
-                >
-                  🍎 Apple Maps
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Directions Buttons */}
+          {cartLocation && (
+            <div className="pt-2 border-t-2 border-gray-700">
+              <div className="text-xs text-white text-center mb-1">Get Directions:</div>
+              <button
+                onClick={openGoogleMaps}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 mb-2 text-sm"
+              >
+                🗺️ Google Maps
+              </button>
+              <button
+                onClick={openAppleMaps}
+                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg shadow-lg transition-all transform hover:scale-105 text-sm"
+              >
+                🍎 Apple Maps
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Location Error */}
         {locationError && (
