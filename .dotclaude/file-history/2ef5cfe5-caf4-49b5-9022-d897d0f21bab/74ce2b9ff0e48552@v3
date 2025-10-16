@@ -1,0 +1,71 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+export type CandyStatus = 'good' | 'low' | 'out';
+
+export interface CartLocation {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+}
+
+interface CandyCartState {
+  // Cart location
+  cartLocation: CartLocation | null;
+  setCartLocation: (location: CartLocation) => void;
+
+  // Candy status
+  candyStatus: CandyStatus;
+  setCandyStatus: (status: CandyStatus) => void;
+
+  // Festive message
+  festiveMessage: string;
+  setFestiveMessage: (message: string) => void;
+
+  // Admin authentication
+  isAdminLoggedIn: boolean;
+  setAdminLoggedIn: (loggedIn: boolean) => void;
+
+  // Auto-refresh settings
+  autoRefreshEnabled: boolean;
+  refreshInterval: number; // in seconds
+  setAutoRefreshEnabled: (enabled: boolean) => void;
+  setRefreshInterval: (interval: number) => void;
+}
+
+export const useCandyCartStore = create<CandyCartState>()(
+  persist(
+    (set) => ({
+      // Initial state
+      cartLocation: null,
+      candyStatus: 'good',
+      festiveMessage: '🎃 Candy Here! 👻',
+      isAdminLoggedIn: false,
+      autoRefreshEnabled: false,
+      refreshInterval: 30,
+
+      // Actions
+      setCartLocation: (location) => set({ cartLocation: location }),
+      setCandyStatus: (status) => set({ candyStatus: status }),
+      setFestiveMessage: (message) => set({ festiveMessage: message }),
+      setAdminLoggedIn: (loggedIn) => set({ isAdminLoggedIn: loggedIn }),
+      setAutoRefreshEnabled: (enabled) => set({ autoRefreshEnabled: enabled }),
+      setRefreshInterval: (interval) => set({ refreshInterval: interval }),
+    }),
+    {
+      name: 'candy-cart-storage',
+      storage: createJSONStorage(() => {
+        // Only use localStorage on the client
+        if (typeof window !== 'undefined') {
+          return localStorage;
+        }
+        // Return a dummy storage for SSR
+        return {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        };
+      }),
+    }
+  )
+);
