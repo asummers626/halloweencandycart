@@ -6,8 +6,6 @@ export interface CartData {
   cartLocation: CartLocation | null;
   candyStatus: CandyStatus;
   festiveMessage: string;
-  cartImage: string | null;
-  visitorCount: number;
   lastUpdated: number;
 }
 
@@ -52,31 +50,6 @@ export const updateFestiveMessage = async (message: string): Promise<void> => {
   await set(timestampRef, Date.now());
 };
 
-// Update cart image in Firebase
-export const updateCartImage = async (image: string | null): Promise<void> => {
-  const db = getDB();
-  if (!db) return;
-
-  const imageRef = ref(db, `${CART_DATA_PATH}/cartImage`);
-  await set(imageRef, image);
-
-  // Update timestamp
-  const timestampRef = ref(db, `${CART_DATA_PATH}/lastUpdated`);
-  await set(timestampRef, Date.now());
-};
-
-// Increment visitor count in Firebase
-export const incrementVisitorCount = async (): Promise<void> => {
-  const db = getDB();
-  if (!db) return;
-
-  const visitorRef = ref(db, `${CART_DATA_PATH}/visitorCount`);
-  const snapshot = await get(visitorRef);
-
-  const currentCount = snapshot.exists() ? (snapshot.val() as number) : 0;
-  await set(visitorRef, currentCount + 1);
-};
-
 // Get current cart data (one-time read)
 export const getCartData = async (): Promise<CartData | null> => {
   const db = getDB();
@@ -108,8 +81,6 @@ export const subscribeToCartData = (callback: (data: CartData) => void): (() => 
         cartLocation: null,
         candyStatus: 'good',
         festiveMessage: '🎃 Candy Here! 👻',
-        cartImage: null,
-        visitorCount: 0,
         lastUpdated: Date.now(),
       };
       callback(defaultData);
@@ -135,8 +106,6 @@ export const initializeCartData = async (): Promise<void> => {
       cartLocation: null,
       candyStatus: 'good',
       festiveMessage: '🎃 Candy Here! 👻',
-      cartImage: null,
-      visitorCount: 0,
       lastUpdated: Date.now(),
     };
     await set(cartRef, defaultData);

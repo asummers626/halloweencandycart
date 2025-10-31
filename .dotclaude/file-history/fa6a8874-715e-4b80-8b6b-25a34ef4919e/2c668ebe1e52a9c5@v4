@@ -7,7 +7,6 @@ export interface CartData {
   candyStatus: CandyStatus;
   festiveMessage: string;
   cartImage: string | null;
-  visitorCount: number;
   lastUpdated: number;
 }
 
@@ -65,18 +64,6 @@ export const updateCartImage = async (image: string | null): Promise<void> => {
   await set(timestampRef, Date.now());
 };
 
-// Increment visitor count in Firebase
-export const incrementVisitorCount = async (): Promise<void> => {
-  const db = getDB();
-  if (!db) return;
-
-  const visitorRef = ref(db, `${CART_DATA_PATH}/visitorCount`);
-  const snapshot = await get(visitorRef);
-
-  const currentCount = snapshot.exists() ? (snapshot.val() as number) : 0;
-  await set(visitorRef, currentCount + 1);
-};
-
 // Get current cart data (one-time read)
 export const getCartData = async (): Promise<CartData | null> => {
   const db = getDB();
@@ -109,7 +96,6 @@ export const subscribeToCartData = (callback: (data: CartData) => void): (() => 
         candyStatus: 'good',
         festiveMessage: '🎃 Candy Here! 👻',
         cartImage: null,
-        visitorCount: 0,
         lastUpdated: Date.now(),
       };
       callback(defaultData);
@@ -136,7 +122,6 @@ export const initializeCartData = async (): Promise<void> => {
       candyStatus: 'good',
       festiveMessage: '🎃 Candy Here! 👻',
       cartImage: null,
-      visitorCount: 0,
       lastUpdated: Date.now(),
     };
     await set(cartRef, defaultData);

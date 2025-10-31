@@ -28,9 +28,6 @@ export default function AdminDashboardPage() {
     setAutoRefreshEnabled,
     refreshInterval,
     setRefreshInterval,
-    keepLocationLive,
-    setKeepLocationLive,
-    visitorCount,
   } = useCandyCartStore();
 
   const [customInterval, setCustomInterval] = useState('');
@@ -82,61 +79,6 @@ export default function AdminDashboardPage() {
     return () => clearInterval(intervalId);
   }, [autoRefreshEnabled, refreshInterval, setCartLocation]);
 
-  // Keep location live even when app is closed (background tracking)
-  useEffect(() => {
-    if (!keepLocationLive) return;
-
-    let wakeLock: WakeLockSentinel | null = null;
-    let watchId: number | null = null;
-
-    const enableBackgroundTracking = async () => {
-      try {
-        // Request wake lock to keep screen active (helps prevent app suspension)
-        if ('wakeLock' in navigator) {
-          wakeLock = await (navigator as  Navigator & { wakeLock: { request: (type: string) => Promise<WakeLockSentinel> } }).wakeLock.request('screen');
-          console.log('Wake Lock activated');
-        }
-
-        // Use watchPosition for continuous tracking
-        if ('geolocation' in navigator) {
-          watchId = navigator.geolocation.watchPosition(
-            (position) => {
-              setCartLocation({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                timestamp: Date.now(),
-              });
-            },
-            (error) => {
-              console.error('Background location error:', error.message);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0,
-            }
-          );
-        }
-      } catch (error) {
-        console.error('Error enabling background tracking:', error);
-      }
-    };
-
-    enableBackgroundTracking();
-
-    // Cleanup
-    return () => {
-      if (wakeLock) {
-        wakeLock.release().then(() => {
-          console.log('Wake Lock released');
-        });
-      }
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [keepLocationLive, setCartLocation]);
-
   const updateLocation = () => {
     setIsUpdatingLocation(true);
     setLocationError('');
@@ -179,9 +121,9 @@ export default function AdminDashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is an image
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    // Check file size (max 1MB to avoid Firebase limitations)
+    if (file.size > 1024 * 1024) {
+      alert('Image size should be less than 1MB');
       return;
     }
 
@@ -189,59 +131,9 @@ export default function AdminDashboardPage() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const img = new Image();
-      img.onload = () => {
-        // Create canvas to resize image
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          alert('Error processing image');
-          setUploadingImage(false);
-          return;
-        }
-
-        // Calculate new dimensions (max 800px width/height while maintaining aspect ratio)
-        const MAX_SIZE = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height = (height * MAX_SIZE) / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width = (width * MAX_SIZE) / height;
-            height = MAX_SIZE;
-          }
-        }
-
-        // Set canvas size and draw resized image
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to base64 with quality compression (0.8 = 80% quality)
-        const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
-        // Check final size (Firebase has ~10MB limit, but we'll keep it under 2MB for performance)
-        const sizeInMB = (resizedBase64.length * 0.75) / (1024 * 1024); // Approximate size in MB
-
-        if (sizeInMB > 2) {
-          alert('Image is still too large after resizing. Please try a different image.');
-          setUploadingImage(false);
-          return;
-        }
-
-        setCartImage(resizedBase64);
-        setUploadingImage(false);
-      };
-      img.onerror = () => {
-        alert('Error loading image');
-        setUploadingImage(false);
-      };
-      img.src = reader.result as string;
+      const base64String = reader.result as string;
+      setCartImage(base64String);
+      setUploadingImage(false);
     };
     reader.onerror = () => {
       alert('Error reading image file');
@@ -282,7 +174,7 @@ export default function AdminDashboardPage() {
         {/* Cart Status Overview */}
         <div className="bg-black/50 backdrop-blur-lg border-4 border-purple-500 rounded-3xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-purple-300 mb-4">🎃 Cart Status</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-purple-900/50 rounded-xl p-4 text-center">
               <div className="text-4xl mb-2">
                 {candyStatus === 'good' ? '✓' : candyStatus === 'low' ? '⚠️' : '✗'}
@@ -320,26 +212,6 @@ export default function AdminDashboardPage() {
                 </div>
                 {autoRefreshEnabled && (
                   <div className="text-xs">Every {refreshInterval}s</div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-purple-900/50 rounded-xl p-4 text-center">
-              <div className="text-4xl mb-2">👥</div>
-              <div className="text-purple-300">
-                <div className="font-bold text-cyan-400 text-2xl">{visitorCount}</div>
-                <div className="text-xs">Unique Visitors</div>
-              </div>
-            </div>
-
-            <div className="bg-purple-900/50 rounded-xl p-4 text-center">
-              <div className="text-4xl mb-2">🔴</div>
-              <div className="text-purple-300">
-                <div className={`font-bold ${keepLocationLive ? 'text-green-400' : 'text-gray-400'}`}>
-                  Live Track {keepLocationLive ? 'ON' : 'OFF'}
-                </div>
-                {keepLocationLive && (
-                  <div className="text-xs">Background Active</div>
                 )}
               </div>
             </div>
@@ -442,37 +314,6 @@ export default function AdminDashboardPage() {
                 </>
               )}
             </div>
-
-            {/* Keep Location Live Toggle */}
-            <div className="bg-green-900/30 rounded-xl p-4 space-y-3 mt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-green-200 font-semibold">🔴 Keep Location Live</span>
-                <button
-                  onClick={() => setKeepLocationLive(!keepLocationLive)}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
-                    keepLocationLive ? 'bg-green-500' : 'bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                      keepLocationLive ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {keepLocationLive && (
-                <div className="bg-green-800/30 rounded-lg p-3">
-                  <p className="text-sm text-green-200 mb-2">
-                    ⚠️ <strong>Background tracking is active!</strong>
-                  </p>
-                  <p className="text-xs text-green-300">
-                    Your location will be continuously tracked and updated. Keep Safari open for best results.
-                    This uses Wake Lock API to prevent the device from sleeping.
-                  </p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -562,7 +403,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-2">
               <label className="block">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg text-center cursor-pointer">
-                  {uploadingImage ? 'Processing...' : cartImage ? '📷 Change Image' : '📷 Upload Image'}
+                  {uploadingImage ? 'Uploading...' : cartImage ? '📷 Change Image' : '📷 Upload Image'}
                   <input
                     type="file"
                     accept="image/*"
@@ -572,10 +413,7 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               </label>
-              <p className="text-xs text-blue-300 text-center">
-                Images are automatically resized to 800px max.<br />
-                Any size image is supported - we&apos;ll optimize it for you!
-              </p>
+              <p className="text-xs text-blue-300 text-center">Maximum file size: 1MB</p>
             </div>
 
             {cartImage && (
